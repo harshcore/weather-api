@@ -119,6 +119,30 @@
     .control-actions { display:flex; gap:8px; margin-top:12px }
     .muted { color:#9fb4d9; font-size:0.88rem }
 
+    .recent-list {
+      margin-top:12px;
+      background: rgba(0,0,0,0.04);
+      border-radius:8px;
+      padding:8px;
+      border: 1px dashed rgba(255,255,255,0.02);
+    }
+    .recent-item {
+      display:flex; justify-content:space-between; gap:8px; align-items:center;
+      padding:6px; border-radius:6px;
+    }
+    .recent-item .label { color:#eaf2ff; font-size:0.92rem; }
+    .recent-item .actions { display:flex; gap:6px; align-items:center; }
+    .mini-btn {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.06);
+      color:#d7eafe;
+      padding:6px 8px;
+      border-radius:6px;
+      cursor:pointer;
+      font-size:0.82rem;
+    }
+    .mini-btn.danger { border-color: rgba(255,0,70,0.12); color: #ff9fb4; }
+
     footer.storage {
       margin-top:auto;
       font-size:0.82rem;
@@ -246,6 +270,19 @@
             <button id="clearAllBtn" class="btn secondary">Clear All</button>
           </div>
         </div>
+
+        <div style="margin-top:12px">
+          <label class="muted">Recent (removed)</label>
+          <div class="recent-list" id="recentList">
+            <!-- recent items inserted here -->
+            <div class="muted" style="padding:8px">No recent items</div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button id="clearRecentBtn" class="mini-btn">Clear Recent</button>
+            <button id="addMyLocationBtn" class="mini-btn">Add my location</button>
+          </div>
+        </div>
+
       </div>
 
       <footer class="storage">
@@ -284,17 +321,24 @@
 
   <script>
     /**************************************************************************
-     * Full working dashboard:
-     * - Multiple locations + localStorage
-     * - Search suggestions (open-meteo geocoding)
-     * - Add by coords, quick chips, remove, refresh, refresh-all, clear-all
-     * - Geolocation default add if permitted
-     * - Per-card sparkline (fixed height) and main hourly chart for selected
-     * - Proper Chart.js destroy to avoid stretching / leaks
+     * Full working dashboard with RECENT functionality & "Add my location"
+     *
+     * New additions:
+     * - When a saved location is removed it moves to the RECENT list (localStorage)
+     * - Recent list is shown in left panel, click to add back to saved locations
+     * - Remove individual recent items or clear all recent items
+     * - "Add my location" button to add current geolocation if not already present
+     *
+     * Original behaviors preserved.
      **************************************************************************/
 
     const STORAGE_KEY = 'phonk_locations_v2';
+    const RECENT_KEY = 'phonk_recent_v1';
+    const MAX_RECENT = 30;
+
     let locations = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); // { id, name, lat, lon, data, hourly, lastUpdated }
+    let recent = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); // array of { id, name, lat, lon, data, hourly, removedAt }
+
     const gridArea = document.getElementById('gridArea');
     const emptyNotice = document.getElementById('emptyNotice');
     const status = document.getElementById('status');
@@ -310,6 +354,10 @@
     const updateAllBtn = document.getElementById('updateAllBtn');
     const clearAllBtn = document.getElementById('clearAllBtn');
 
+    const recentListEl = document.getElementById('recentList');
+    const clearRecentBtn = document.getElementById('clearRecentBtn');
+    const addMyLocationBtn = document.getElementById('addMyLocationBtn');
+
     const selectedLabel = document.getElementById('selectedLabel');
     const mainHourlyCanvas = document.getElementById('mainHourlyChart');
 
@@ -321,7 +369,11 @@
     // helper uid
     const uid = () => 'loc_' + Math.random().toString(36).slice(2,9);
 
-    // helpers for AQI
+    function escapeHtml(s){ return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;'); }
+    function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(locations)); }
+    function saveRecent(){ localStorage.setItem(RECENT_KEY, JSON.stringify(recent)); }
+
+    // AQI helpers
     function aqiClassFromNumber(n){
       if (n === null || isNaN(n)) return '';
       if (n <= 50) return 'aqi-good';
@@ -336,9 +388,6 @@
       if (n <= 150) return 'Unhealthy';
       return 'Hazardous';
     }
-
-    function escapeHtml(s){ return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;'); }
-    function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(locations)); }
 
     // API calls
     async function fetchWeather(lat, lon){
@@ -391,6 +440,59 @@
       cardCharts.clear();
     }
     function destroyMainChart(){ if (mainChart){ try{ mainChart.destroy(); }catch(e){} mainChart = null; } }
+
+    function renderRecent(){
+      recentListEl.innerHTML = '';
+      if (!recent || recent.length === 0){
+        recentListEl.innerHTML = `<div class="muted" style="padding:8px">No recent items</div>`;
+        return;
+      }
+      // show most-recent-first
+      recent.slice().reverse().forEach((r, idxReverse) => {
+        const idx = recent.length - 1 - idxReverse; // actual index in recent array
+        const div = document.createElement('div');
+        div.className = 'recent-item';
+        div.innerHTML = `
+          <div class="label">${escapeHtml(r.name || `${r.lat.toFixed(3)}, ${r.lon.toFixed(3)}`)}</div>
+          <div class="actions">
+            <button class="mini-btn" data-action="add" data-idx="${idx}">Add</button>
+            <button class="mini-btn danger" data-action="remove" data-idx="${idx}">Delete</button>
+          </div>
+        `;
+        // actions
+        div.querySelector('[data-action="add"]').addEventListener('click', () => {
+          // add back to locations (if not duplicate)
+          const item = recent[idx];
+          if (!item) return;
+          const duplicate = locations.some(l => Math.abs(l.lat - item.lat) < 0.1 && Math.abs(l.lon - item.lon) < 0.1);
+          if (duplicate){ alert('Location already in dashboard'); return; }
+          // move item back to locations (with new id)
+          const newEntry = {
+            id: uid(),
+            name: item.name,
+            lat: item.lat,
+            lon: item.lon,
+            data: item.data || {},
+            hourly: item.hourly || null,
+            lastUpdated: Date.now()
+          };
+          locations.push(newEntry);
+          saveState();
+          // remove from recent
+          recent.splice(idx,1);
+          saveRecent();
+          render();
+          renderRecent();
+        });
+        div.querySelector('[data-action="remove"]').addEventListener('click', () => {
+          if (!confirm(`Remove recent '${recent[idx].name}'?`)) return;
+          recent.splice(idx,1);
+          saveRecent();
+          renderRecent();
+        });
+        recentListEl.appendChild(div);
+      });
+    }
 
     function render(){
       gridArea.innerHTML = '';
@@ -478,7 +580,7 @@
         const refreshBtn = card.querySelector('[data-action="refresh"]');
         const removeBtn = card.querySelector('[data-action="remove"]');
         refreshBtn.addEventListener('click', (ev) => { ev.stopPropagation(); refreshLocation(idx); });
-        removeBtn.addEventListener('click', (ev) => { ev.stopPropagation(); removeLocation(idx); });
+        removeBtn.addEventListener('click', (ev) => { ev.stopPropagation(); removeLocationToRecent(idx); });
 
         gridArea.appendChild(card);
 
@@ -509,6 +611,88 @@
 
       // after rendering cards, update main chart for selected location
       updateMainHourlyChart();
+    }
+
+    // move removed location to recent list (instead of permanent delete)
+    function removeLocationToRecent(index){
+      const item = locations[index];
+      if (!item) return;
+      if (!confirm(`Remove ${item.name || 'this location'} and move to recent?`)) return;
+
+      // prepare recent entry (shallow copy)
+      const recentEntry = {
+        id: item.id, // keep original id for reference (but we will not reuse)
+        name: item.name,
+        lat: item.lat,
+        lon: item.lon,
+        data: item.data || {},
+        hourly: item.hourly || null,
+        removedAt: Date.now()
+      };
+
+      // remove from locations
+      // destroy chart if present
+      if (cardCharts.has(item.id)){ try{ cardCharts.get(item.id).destroy(); }catch(e){} cardCharts.delete(item.id); }
+
+      locations.splice(index,1);
+      saveState();
+
+      // push to recent while preventing duplicates (by lat/lon within 0.1)
+      const dupIndex = recent.findIndex(r => Math.abs(r.lat - recentEntry.lat) < 0.1 && Math.abs(r.lon - recentEntry.lon) < 0.1);
+      if (dupIndex !== -1){
+        // update removedAt and place as most recent
+        recent.splice(dupIndex,1);
+      }
+      recent.push(recentEntry);
+      // cap recent length
+      if (recent.length > MAX_RECENT) recent = recent.slice(recent.length - MAX_RECENT);
+      saveRecent();
+      render();
+      renderRecent();
+      status.textContent = `Moved ${item.name} to recent`;
+      setTimeout(()=> status.textContent = `Showing ${locations.length} location(s)`, 800);
+    }
+
+    // permanently remove from recent
+    function removeRecentAt(idx){
+      if (idx < 0 || idx >= recent.length) return;
+      recent.splice(idx,1);
+      saveRecent();
+      renderRecent();
+    }
+
+    // clear all recent
+    function clearAllRecent(){
+      if (!confirm('Clear all recent items?')) return;
+      recent = [];
+      saveRecent();
+      renderRecent();
+    }
+
+    // add current user location via geolocation (button)
+    async function addMyLocationButtonAction(){
+      if (!navigator.geolocation) { alert('Geolocation not supported'); return; }
+      // check duplicate: we will check later after obtaining coords
+      status.textContent = 'Getting your location...';
+      navigator.geolocation.getCurrentPosition(async (pos) => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        const duplicate = locations.some(l => Math.abs(l.lat - lat) < 0.1 && Math.abs(l.lon - lon) < 0.1);
+        if (duplicate) { alert('Your location is already in the dashboard'); status.textContent = `Showing ${locations.length} location(s)`; return; }
+        try {
+          await addLocation(lat, lon, 'My Location');
+          status.textContent = 'Added your location';
+        } catch(e){
+          console.warn('add my location failed', e);
+          alert('Failed to add your location');
+        } finally {
+          setTimeout(()=> status.textContent = `Showing ${locations.length} location(s)`, 700);
+        }
+      }, (err) => {
+        console.warn('geolocation error', err);
+        alert('Could not retrieve location (permission denied or error)');
+        status.textContent = `Showing ${locations.length} location(s)`;
+      }, { enableHighAccuracy:false, timeout:8000 });
     }
 
     // CRUD operations
@@ -638,9 +822,9 @@
     }
 
     function removeLocation(index){
+      // legacy direct delete (keeps behavior but also support move-to-recent)
       const name = locations[index]?.name || 'item';
       if (!confirm(`Remove ${name}?`)) return;
-      // destroy chart instance for that card if present
       const id = locations[index].id;
       if (cardCharts.has(id)){ try{ cardCharts.get(id).destroy(); }catch(e){} cardCharts.delete(id); }
       locations.splice(index,1);
@@ -712,9 +896,13 @@
       if (!ev.target.closest('#suggestions') && !ev.target.closest('#searchInput')) suggestionsEl.style.display='none';
     });
 
-    // initial + geolocation
+    clearRecentBtn.addEventListener('click', clearAllRecent);
+    addMyLocationBtn.addEventListener('click', addMyLocationButtonAction);
+
+    // initial + geolocation auto-add (if allowed)
     async function init(){
       render();
+      renderRecent();
 
       // refresh saved on startup
       if (locations.length > 0){
@@ -814,8 +1002,9 @@
       });
     }
 
-    // start
+    // Start
     init();
+
   </script>
 </body>
 </html>
