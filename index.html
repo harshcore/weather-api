@@ -3,304 +3,305 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Phonk Multi-Location Weather Dashboard</title>
+  <title>Phonk Multi-Location Weather Dashboard — Complete</title>
+
+  <!-- Google fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
-    /* ---------- Fonts & reset ---------- */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap');
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html,body { height: 100%; }
-
-    /* ---------- Page layout ---------- */
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
     body{
-      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-      background: linear-gradient(180deg,#05010a 0%, #0a0312 60%);
-      color: #e9eef8;
+      font-family: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(180deg,#05010a 0%, #08030e 60%);
+      color: #e8f3ff;
       min-height:100vh;
-      display: flex;
-      gap: 1.5rem;
-      padding: 1.5rem;
-      align-items: stretch;
+      display:flex;
+      padding:18px;
+      gap:18px;
     }
 
-    /* Two-column container */
-    .container {
-      display: grid;
+    /* two-column container */
+    .container{
+      width:100%;
+      display:grid;
       grid-template-columns: 380px 1fr;
-      gap: 1.5rem;
-      width: 100%;
-      align-items: start;
+      gap:18px;
+      align-items:start;
+    }
+    @media (max-width:900px){
+      .container{grid-template-columns:1fr; padding-bottom:18px}
     }
 
-    /* Responsive fallback: single column on small screens */
-    @media (max-width: 880px) {
-      .container { grid-template-columns: 1fr; padding-bottom: 2rem; }
-    }
-
-    /* ---------- Left panel (controls) ---------- */
-    .panel-left {
-      background: linear-gradient(180deg, rgba(255,0,160,0.04), rgba(0,200,255,0.02));
-      border: 1px solid rgba(255,0,160,0.08);
-      border-radius: 14px;
-      padding: 1.1rem;
-      backdrop-filter: blur(6px);
-      box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+    /* left panel */
+    .panel-left{
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,0,160,0.02));
+      border:1px solid rgba(255,0,160,0.06);
+      border-radius:14px;
+      padding:16px;
+      min-height:calc(100vh - 36px);
       display:flex;
       flex-direction:column;
-      gap: 1rem;
-      height: calc(100vh - 3rem);
-      overflow: auto;
+      gap:12px;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+      overflow:auto;
     }
 
-    .title {
+    .brand {
+      font-family: 'Orbitron', sans-serif;
       font-weight:700;
+      color: #ff8bd8;
       letter-spacing:1px;
-      color: #ff7ad9;
-      text-shadow: 0 6px 20px rgba(255,0,160,0.12);
-      font-size: 1.15rem;
+      font-size:1.15rem;
     }
+    .subtitle { color:#9fb4d9; font-size:0.88rem; margin-top:4px }
 
-    .subtitle { color: #9fb4d9; font-size: 0.85rem; margin-bottom: .4rem; }
+    label.muted { color:#9fb4d9; font-size:0.85rem; display:block; margin-bottom:6px }
 
-    .control-group { display:flex; gap:.6rem; align-items:center; flex-wrap:wrap; }
-
-    input[type="text"], input[type="number"]{
+    .search-row { display:flex; gap:8px; align-items:center; margin-top:6px }
+    .search-row input[type="text"], .coords input {
       background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.06);
-      padding: 0.6rem 0.8rem;
-      color: #eaf2ff;
-      border-radius: 8px;
-      outline: none;
-      min-width: 0;
-      font-size: 0.95rem;
+      border:1px solid rgba(255,255,255,0.06);
+      padding:10px 12px;
+      color:#eaf2ff;
+      border-radius:10px;
+      outline:none;
+      font-size:0.95rem;
     }
-
-    input[type="text"]:focus, input[type="number"]:focus { box-shadow: 0 6px 24px rgba(255,0,160,0.06); border-color: rgba(255,0,160,0.14); }
-
-    .btn {
+    .search-row button, .btn {
       background: linear-gradient(90deg,#ff007c,#00eaff);
       color:#03111a;
-      padding: 0.55rem 0.9rem;
-      border-radius: 8px;
-      border: none;
-      font-weight: 700;
-      cursor: pointer;
-      font-size: 0.95rem;
+      padding:9px 12px;
+      border-radius:10px;
+      border:none;
+      font-weight:700;
+      cursor:pointer;
+      font-size:0.95rem;
     }
     .btn.secondary {
       background: transparent;
       color: #d7eafe;
       border: 1px solid rgba(255,255,255,0.06);
-      font-weight: 600;
-    }
-
-    /* Suggestions dropdown */
-    .suggestions {
-      background: rgba(0,0,0,0.55);
-      border: 1px solid rgba(255,0,160,0.06);
-      border-radius: 8px;
-      overflow: auto;
-      max-height: 220px;
-      margin-top: 0.4rem;
-    }
-    .suggestions .item {
-      padding: 0.6rem 0.8rem;
-      cursor: pointer;
-      border-bottom: 1px dashed rgba(255,255,255,0.02);
-    }
-    .suggestions .item:hover { background: rgba(255,0,160,0.06); color: #001018; }
-
-    /* Quick selects (chips) */
-    .chips {
-      display:flex; gap:.5rem; flex-wrap:wrap;
-    }
-    .chip {
-      padding: 0.45rem 0.7rem;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.04);
-      cursor:pointer;
-      font-size:0.9rem;
-      color:#f6f8ff;
-    }
-    .chip:hover { box-shadow: 0 6px 20px rgba(0,232,255,0.06); transform: translateY(-2px); }
-
-    /* small utilities */
-    .row { display:flex; gap:.6rem; align-items:center; }
-    .muted { color: #9fb4d9; font-size: 0.85rem; }
-
-    /* ---------- Right panel (dashboard) ---------- */
-    .panel-right {
-      background: linear-gradient(180deg, rgba(10,6,20,0.55), rgba(3,6,12,0.75));
-      border: 1px solid rgba(0,200,255,0.03);
-      border-radius: 14px;
-      padding: 1rem;
-      min-height: calc(100vh - 3rem);
-      overflow: auto;
-      box-shadow: 0 10px 40px rgba(1,2,6,0.7);
-    }
-
-    .toolbar {
-      display:flex; justify-content:space-between; align-items:center; gap:1rem;
-      margin-bottom: 1rem;
-    }
-    .toolbar .left { display:flex; gap:.6rem; align-items:center; }
-
-    /* Grid of location cards (responsive) */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 1rem;
-    }
-
-    .location-card {
-      border-radius: 12px;
-      padding: 1rem;
-      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,0,160,0.02));
-      border: 1px solid rgba(255,0,160,0.04);
-      position: relative;
-      overflow: hidden;
-      display:flex;
-      flex-direction:column;
-      gap:.6rem;
-      transition: transform .18s ease, box-shadow .18s ease;
-    }
-    .location-card:hover { transform: translateY(-6px); box-shadow: 0 22px 45px rgba(0,0,0,0.6); }
-
-    .card-header {
-      display:flex; justify-content:space-between; align-items:center;
-      gap:.6rem;
-    }
-    .loc-name { font-weight:700; color:#fd9cd9; font-size:1.05rem; }
-    .loc-coords { font-size:0.85rem; color:#9fb4d9; }
-
-    .small-grid {
-      display:grid; grid-template-columns: 1fr 1fr; gap:.4rem .8rem; align-items:center;
-      margin-top:.6rem;
-    }
-    .kv { display:flex; flex-direction:column; gap:0.18rem; }
-    .k { font-size: .8rem; color:#9fb4d9; }
-    .v { font-weight:700; font-size: 1rem; color:#e8f6ff; }
-
-    .aqi-pill {
-      padding: 0.28rem 0.6rem; border-radius: 999px; font-weight:700; font-size:0.9rem;
-      display:inline-block;
-    }
-    .aqi-good { background: rgba(0,255,153,0.12); color: #00ff99; border:1px solid rgba(0,255,153,0.12); }
-    .aqi-moderate { background: rgba(255,255,0,0.08); color: #fff200; border:1px solid rgba(255,255,0,0.06); }
-    .aqi-unhealthy { background: rgba(255,120,0,0.08); color:#ff7b00; border:1px solid rgba(255,120,0,0.06); }
-    .aqi-hazardous { background: rgba(255,0,70,0.08); color:#ff1244; border:1px solid rgba(255,0,70,0.06); }
-
-    .card-actions { display:flex; gap:.5rem; margin-top:.6rem; }
-    .icon-btn {
-      background: rgba(255,255,255,0.02);
-      border: 1px solid rgba(255,255,255,0.03);
-      padding: 0.45rem 0.6rem;
-      border-radius: 8px;
-      cursor:pointer;
-      color:#eef8ff;
       font-weight:600;
     }
 
-    /* tiny loader */
-    .loader { font-size: 0.9rem; color:#9fb4d9; }
-    .empty {
-      color:#9fb4d9; text-align:center; padding: 2rem 0; border: 1px dashed rgba(255,255,255,0.03); border-radius:8px;
+    .suggestions {
+      margin-top:8px;
+      background: rgba(0,0,0,0.55);
+      border: 1px solid rgba(255,0,160,0.06);
+      border-radius:8px;
+      max-height:240px;
+      overflow:auto;
+    }
+    .suggestions .item {
+      padding:10px;
+      cursor:pointer;
+      border-bottom:1px dashed rgba(255,255,255,0.02);
+      color:#eaf2ff;
+    }
+    .suggestions .item:hover{ background: rgba(255,0,160,0.06); color:#001018 }
+
+    .chips { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px }
+    .chip {
+      padding:8px 12px;
+      border-radius:999px;
+      background: rgba(255,255,255,0.03);
+      border:1px solid rgba(255,255,255,0.04);
+      cursor:pointer;
+      font-size:0.9rem;
+    }
+    .chip:hover{ transform:translateY(-4px); box-shadow: 0 18px 45px rgba(0,232,255,0.04) }
+
+    .control-actions { display:flex; gap:8px; margin-top:12px }
+    .muted { color:#9fb4d9; font-size:0.88rem }
+
+    footer.storage {
+      margin-top:auto;
+      font-size:0.82rem;
+      color:#9fb4d9;
+      border-top:1px dashed rgba(255,255,255,0.02);
+      padding-top:10px;
     }
 
+    /* right panel */
+    .panel-right{
+      background: linear-gradient(180deg, rgba(10,6,20,0.55), rgba(3,6,12,0.75));
+      border: 1px solid rgba(0,200,255,0.03);
+      border-radius: 14px;
+      padding: 14px;
+      min-height: calc(100vh - 36px);
+      overflow:auto;
+      box-shadow: 0 10px 40px rgba(1,2,6,0.75);
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .toolbar {
+      display:flex; justify-content:space-between; align-items:center; gap:10px;
+      margin-bottom:6px;
+    }
+    .grid {
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap:12px;
+    }
+
+    .location-card {
+      border-radius:12px;
+      padding:12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,0,160,0.02));
+      border:1px solid rgba(255,0,160,0.04);
+      position:relative;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      transition: transform .18s ease, box-shadow .18s ease;
+    }
+    .location-card:hover{ transform: translateY(-6px); box-shadow: 0 22px 45px rgba(0,0,0,0.6) }
+
+    .card-header { display:flex; justify-content:space-between; align-items:center }
+    .loc-name { font-weight:700; color:#ffd3f0; font-size:1.05rem }
+    .loc-coords { font-size:0.85rem; color:#9fb4d9 }
+
+    .small-grid {
+      display:grid; grid-template-columns:1fr 1fr; gap:.35rem .8rem; align-items:center; margin-top:6px;
+    }
+    .kv { display:flex; flex-direction:column; gap:.18rem }
+    .k { font-size:.78rem; color:#9fb4d9 }
+    .v { font-weight:700; font-size:1rem; color:#e8f6ff }
+
+    .aqi-pill { padding:6px 10px; border-radius:999px; font-weight:700; font-size:0.92rem; display:inline-block }
+    .aqi-good{ background: rgba(0,255,153,0.12); color:#00ff99; border:1px solid rgba(0,255,153,0.12) }
+    .aqi-moderate{ background: rgba(255,255,0,0.08); color:#fff200; border:1px solid rgba(255,255,0,0.06) }
+    .aqi-unhealthy{ background: rgba(255,120,0,0.08); color:#ff7b00; border:1px solid rgba(255,120,0,0.06) }
+    .aqi-hazardous{ background: rgba(255,0,70,0.08); color:#ff1244; border:1px solid rgba(255,0,70,0.06) }
+
+    .card-actions { display:flex; gap:8px; margin-top:6px; }
+    .icon-btn { background: rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.03); padding:8px 10px; border-radius:8px; cursor:pointer; color:#eef8ff; font-weight:600 }
+
+    .loader { font-size:0.95rem; color:#9fb4d9 }
+
+    .empty { color:#9fb4d9; text-align:center; padding: 28px 0; border:1px dashed rgba(255,255,255,0.03); border-radius:8px }
+
+    /* sparkline fixed size — prevents stretching */
+    .spark-canvas {
+      width:160px;
+      height:48px;
+      display:block;
+    }
+    /* main hourly chart fixed height */
+    #mainHourlyChart {
+      width:100%;
+      height:220px;
+      display:block;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <!-- LEFT: Controls + search -->
+    <!-- LEFT CONTROLS -->
     <aside class="panel-left" aria-label="controls">
       <div>
-        <div class="title">Atmospheric Intelligence</div>
-        <div class="subtitle">Add multiple locations — auto-save in your browser</div>
-      </div>
+        <div class="brand">PHONK ATMOS</div>
+        <div class="subtitle">Multi-location weather + AQI • saved locally</div>
 
-      <div>
-        <label class="muted">Search city (type then pick)</label>
-        <div style="margin-top:0.5rem">
-          <input id="searchInput" type="text" placeholder="e.g. Tokyo, Mumbai, New York..." autocomplete="off" />
+        <div style="margin-top:14px">
+          <label class="muted">Search city (type → pick)</label>
+          <div class="search-row">
+            <input id="searchInput" type="text" placeholder="Tokyo, Mumbai, New York..." autocomplete="off" />
+            <button id="searchClear" class="btn secondary" title="Clear search">X</button>
+          </div>
+          <div id="suggestions" class="suggestions" style="display:none;margin-top:8px"></div>
         </div>
-        <div id="suggestions" class="suggestions" style="display:none"></div>
-      </div>
 
-      <div>
-        <div class="muted" style="margin-bottom:.4rem">Or add by coordinates</div>
-        <div class="control-group">
-          <input id="latInput" type="number" step="any" placeholder="Latitude" />
-          <input id="lonInput" type="number" step="any" placeholder="Longitude" />
-          <button class="btn" id="addCoordsBtn">Add</button>
+        <div style="margin-top:12px">
+          <label class="muted">Add by coordinates</label>
+          <div class="coords" style="display:flex;gap:8px;margin-top:6px">
+            <input id="latInput" type="number" step="any" placeholder="Latitude" />
+            <input id="lonInput" type="number" step="any" placeholder="Longitude" />
+            <button id="addCoordsBtn" class="btn">Add</button>
+          </div>
+        </div>
+
+        <div style="margin-top:12px">
+          <label class="muted">Quick selects</label>
+          <div id="quickChips" class="chips" style="margin-top:8px">
+            <div class="chip" data-lat="51.5072" data-lon="-0.1276">London</div>
+            <div class="chip" data-lat="40.7128" data-lon="-74.0060">New York</div>
+            <div class="chip" data-lat="35.6762" data-lon="139.6503">Tokyo</div>
+            <div class="chip" data-lat="28.6139" data-lon="77.2090">Delhi</div>
+            <div class="chip" data-lat="37.7749" data-lon="-122.4194">San Francisco</div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px">
+          <label class="muted">Actions</label>
+          <div class="control-actions" style="margin-top:8px">
+            <button id="updateAllBtn" class="btn">Refresh All</button>
+            <button id="clearAllBtn" class="btn secondary">Clear All</button>
+          </div>
         </div>
       </div>
 
-      <div>
-        <div class="muted">Quick selects</div>
-        <div class="chips" id="quickChips" style="margin-top:.6rem">
-          <!-- some default chips -->
-          <div class="chip" data-lat="51.5072" data-lon="-0.1276">London</div>
-          <div class="chip" data-lat="40.7128" data-lon="-74.0060">New York</div>
-          <div class="chip" data-lat="35.6762" data-lon="139.6503">Tokyo</div>
-          <div class="chip" data-lat="28.6139" data-lon="77.2090">Delhi</div>
-          <div class="chip" data-lat="37.7749" data-lon="-122.4194">San Francisco</div>
-        </div>
-      </div>
-
-      <div style="margin-top:1rem">
-        <div class="muted">Actions</div>
-        <div style="display:flex; gap:.6rem; margin-top:.6rem">
-          <button class="btn" id="updateAllBtn">Refresh All</button>
-          <button class="btn secondary" id="clearAllBtn">Clear All</button>
-        </div>
-      </div>
-
-      <div style="margin-top:auto; padding-top:1rem">
-        <div class="muted">Storage</div>
-        <div style="margin-top:.5rem" class="muted">Saved locally (this browser). Use <strong>Clear All</strong> to remove.</div>
-      </div>
+      <footer class="storage">
+        <div>Saved locally — this browser.</div>
+        <div style="margin-top:6px; font-size:0.82rem;">Tip: allow location when prompted to auto-add your current spot.</div>
+      </footer>
     </aside>
 
-    <!-- RIGHT: Dashboard -->
+    <!-- RIGHT DASHBOARD -->
     <main class="panel-right" aria-label="dashboard">
       <div class="toolbar">
         <div class="left">
           <div style="font-weight:700; color:#a9e9ff">Locations</div>
-          <div style="margin-left:.6rem; color:#9fb4d9; font-size:.92rem">Live weather & AQI</div>
+          <div style="margin-left:10px; color:#9fb4d9; font-size:0.92rem">Live weather & AQI</div>
         </div>
         <div class="right">
           <div id="status" class="loader">Idle</div>
         </div>
       </div>
 
-      <section id="gridArea" class="grid">
-        <!-- Location cards inserted here -->
-      </section>
+      <section id="gridArea" class="grid"></section>
 
-      <div id="emptyNotice" class="empty" style="display:none; margin-top:1rem">
+      <div id="emptyNotice" class="empty" style="display:none; margin-top:6px">
         No locations yet — add a city or coordinates on the left.
+      </div>
+
+      <div class="card" style="margin-top:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:700">Hourly temperature (selected)</div>
+          <div id="selectedLabel" style="color:#9fb4d9;font-size:0.9rem">—</div>
+        </div>
+        <canvas id="mainHourlyChart"></canvas>
       </div>
     </main>
   </div>
 
   <script>
     /**************************************************************************
-     * Multi-location weather + AQI dashboard
-     * - Geocoding from Open-Meteo for search suggestions
-     * - Open-Meteo weather + Open-Meteo air-quality
-     * - Persist locations in localStorage
-     * - Defensive checks so missing API fields don't throw ReferenceErrors
+     * Full working dashboard:
+     * - Multiple locations + localStorage
+     * - Search suggestions (open-meteo geocoding)
+     * - Add by coords, quick chips, remove, refresh, refresh-all, clear-all
+     * - Geolocation default add if permitted
+     * - Per-card sparkline (fixed height) and main hourly chart for selected
+     * - Proper Chart.js destroy to avoid stretching / leaks
      **************************************************************************/
 
-    // --- State & DOM refs
     const STORAGE_KEY = 'phonk_locations_v2';
-    let locations = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); // array of { id, name, lat, lon, data, lastUpdated }
+    let locations = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); // { id, name, lat, lon, data, hourly, lastUpdated }
     const gridArea = document.getElementById('gridArea');
     const emptyNotice = document.getElementById('emptyNotice');
     const status = document.getElementById('status');
 
     const searchInput = document.getElementById('searchInput');
     const suggestionsEl = document.getElementById('suggestions');
+    const searchClear = document.getElementById('searchClear');
 
     const latInput = document.getElementById('latInput');
     const lonInput = document.getElementById('lonInput');
@@ -309,10 +310,18 @@
     const updateAllBtn = document.getElementById('updateAllBtn');
     const clearAllBtn = document.getElementById('clearAllBtn');
 
-    // helper: generate unique id
+    const selectedLabel = document.getElementById('selectedLabel');
+    const mainHourlyCanvas = document.getElementById('mainHourlyChart');
+
+    // store chart instances
+    const cardCharts = new Map();
+    let mainChart = null;
+    let selectedLocationIndex = 0; // index in locations[] used for main hourly chart
+
+    // helper uid
     const uid = () => 'loc_' + Math.random().toString(36).slice(2,9);
 
-    // helper class pickers
+    // helpers for AQI
     function aqiClassFromNumber(n){
       if (n === null || isNaN(n)) return '';
       if (n <= 50) return 'aqi-good';
@@ -328,74 +337,81 @@
       return 'Hazardous';
     }
 
-    // save & load
-    function saveState(){
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(locations));
-    }
+    function escapeHtml(s){ return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;'); }
+    function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(locations)); }
 
-    // ---------- API calls ----------
+    // API calls
     async function fetchWeather(lat, lon){
-      const weatherURL = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,is_day,weather_code,wind_speed_10m,surface_pressure,cloud_cover,relative_humidity_2m,dew_point_2m`;
+      const weatherURL = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m,apparent_temperature&timezone=auto`;
       const res = await fetch(weatherURL);
-      if (!res.ok) throw new Error('Weather API error');
-      const json = await res.json();
-      return json;
+      if (!res.ok) throw new Error('Weather API error: ' + res.status);
+      return await res.json();
     }
     async function fetchAqi(lat, lon){
-      const aqiURL = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=us_aqi`;
+      const aqiURL = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=us_aqi&timezone=auto`;
       const res = await fetch(aqiURL);
-      if (!res.ok) throw new Error('AQI API error');
-      const json = await res.json();
-      return json;
+      if (!res.ok) throw new Error('AQI API error: ' + res.status);
+      return await res.json();
     }
 
-    // Geocoding suggestions (open-meteo geocoding)
-    let geocodeToken = 0;
+    // geocoding suggestions (debounced)
+    let geoReq = 0;
     async function geocodeQuery(q){
-      const token = ++geocodeToken;
-      if (!q || q.length < 2) { suggestionsEl.style.display = 'none'; return; }
-      const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=7&language=en&format=json`;
+      const thisReq = ++geoReq;
+      if (!q || q.length < 2){ suggestionsEl.style.display='none'; suggestionsEl.innerHTML=''; return; }
+      suggestionsEl.style.display='block';
+      suggestionsEl.innerHTML = `<div class="item">Searching…</div>`;
       try {
-        const res = await fetch(url);
-        const data = await res.json();
-        // ignore results if a newer input arrived
-        if (token !== geocodeToken) return;
-        if (!data || !Array.isArray(data.results) || data.results.length === 0){
+        const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=8&language=en`;
+        const r = await fetch(url);
+        const json = await r.json();
+        if (thisReq !== geoReq) return; // stale
+        if (!json || !Array.isArray(json.results) || json.results.length === 0){
           suggestionsEl.innerHTML = `<div class="item">No results</div>`;
-          suggestionsEl.style.display = 'block';
           return;
         }
-        suggestionsEl.innerHTML = data.results.map(r => {
-          const display = `${r.name}${r.admin1 ? ', ' + r.admin1 : ''}${r.country ? ', ' + r.country : ''}`;
-          return `<div class="item" data-lat="${r.latitude}" data-lon="${r.longitude}" data-name="${escapeHtml(display)}">${escapeHtml(display)}</div>`;
+        suggestionsEl.innerHTML = json.results.map(r => {
+          const label = `${r.name}${r.admin1 ? ', '+r.admin1 : ''}${r.country ? ', '+r.country : ''}`;
+          const safe = escapeHtml(label);
+          return `<div class="item" data-lat="${r.latitude}" data-lon="${r.longitude}" data-name="${safe}">${safe}</div>`;
         }).join('');
-        suggestionsEl.style.display = 'block';
-      } catch (err){
+      } catch(e){
+        console.warn('geocode', e);
         suggestionsEl.innerHTML = `<div class="item">Error</div>`;
-        suggestionsEl.style.display = 'block';
       }
     }
 
-    // ---------- Rendering ----------
-    function updateEmptyState(){
-      emptyNotice.style.display = locations.length === 0 ? 'block' : 'none';
-    }
+    // rendering
+    function updateEmptyState(){ emptyNotice.style.display = locations.length === 0 ? 'block' : 'none'; }
 
-    function escapeHtml(s){
-      return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+    function destroyAllCardCharts(){
+      for (const c of cardCharts.values()){
+        try { c.destroy(); } catch(e) {}
+      }
+      cardCharts.clear();
     }
+    function destroyMainChart(){ if (mainChart){ try{ mainChart.destroy(); }catch(e){} mainChart = null; } }
 
     function render(){
       gridArea.innerHTML = '';
+      destroyAllCardCharts();
+
       if (locations.length === 0){
         updateEmptyState();
         status.textContent = 'No locations';
+        selectedLabel.textContent = '—';
+        destroyMainChart();
         return;
       }
       updateEmptyState();
       status.textContent = `Showing ${locations.length} location(s)`;
+
+      // clamp selected index
+      if (selectedLocationIndex >= locations.length) selectedLocationIndex = 0;
+
       locations.forEach((loc, idx) => {
         const data = loc.data || {};
+        const hourly = loc.hourly || {};
         const aqiNum = (data.aqi === undefined || data.aqi === null) ? null : Number(data.aqi);
         const aqiClass = aqiClassFromNumber(aqiNum);
         const aqiLabel = aqiLabelFromNumber(aqiNum);
@@ -407,32 +423,32 @@
           <div class="card-header">
             <div>
               <div class="loc-name">${escapeHtml(loc.name || 'Unknown')}</div>
-              <div class="loc-coords">${loc.lat.toFixed(4)}, ${loc.lon.toFixed(4)}</div>
+              <div class="loc-coords">${Number(loc.lat).toFixed(4)}, ${Number(loc.lon).toFixed(4)}</div>
             </div>
-            <div style="text-align:right">
-              <div style="font-size:.88rem; color:#9fb4d9">${updated}</div>
-              <div style="margin-top:.3rem">
+            <div style="text-align:right;min-width:120px">
+              <div style="font-size:.82rem; color:#9fb4d9">${escapeHtml(updated)}</div>
+              <div style="margin-top:6px; display:flex; gap:8px; justify-content:flex-end">
                 <button class="icon-btn" data-action="refresh" title="Refresh">↻</button>
                 <button class="icon-btn" data-action="remove" title="Remove">🗑</button>
               </div>
             </div>
           </div>
 
-          <div class="small-grid" style="margin-top:.6rem">
-            <div class="kv"><div class="k">Temperature</div><div class="v">${data.temp !== undefined ? `${data.temp} °C` : '—'}</div></div>
-            <div class="kv"><div class="k">Feels</div><div class="v">${data.feels !== undefined ? `${data.feels} °C` : '—'}</div></div>
+          <div class="small-grid" style="margin-top:8px">
+            <div class="kv"><div class="k">Temperature</div><div class="v">${data.temp !== undefined && data.temp !== null ? `${data.temp} °C` : '—'}</div></div>
+            <div class="kv"><div class="k">Feels</div><div class="v">${data.feels !== undefined && data.feels !== null ? `${data.feels} °C` : '—'}</div></div>
 
-            <div class="kv"><div class="k">Humidity</div><div class="v">${data.humidity !== undefined ? `${data.humidity} %` : '—'}</div></div>
-            <div class="kv"><div class="k">Wind</div><div class="v">${data.wind !== undefined ? `${data.wind} km/h` : '—'}</div></div>
+            <div class="kv"><div class="k">Humidity</div><div class="v">${data.humidity !== undefined && data.humidity !== null ? `${data.humidity} %` : '—'}</div></div>
+            <div class="kv"><div class="k">Wind</div><div class="v">${data.wind !== undefined && data.wind !== null ? `${data.wind} km/h` : '—'}</div></div>
 
-            <div class="kv"><div class="k">Cloud</div><div class="v">${data.cloud !== undefined ? `${data.cloud} %` : '—'}</div></div>
-            <div class="kv"><div class="k">Pressure</div><div class="v">${data.pressure !== undefined ? `${data.pressure} hPa` : '—'}</div></div>
+            <div class="kv"><div class="k">Cloud</div><div class="v">${data.cloud !== undefined && data.cloud !== null ? `${data.cloud} %` : '—'}</div></div>
+            <div class="kv"><div class="k">Pressure</div><div class="v">${data.pressure !== undefined && data.pressure !== null ? `${data.pressure} hPa` : '—'}</div></div>
           </div>
 
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:.7rem">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px">
             <div>
               <div class="k">AQI</div>
-              <div style="margin-top:.25rem">
+              <div style="margin-top:6px">
                 <span class="aqi-pill ${aqiClass}">${aqiNum === null || isNaN(aqiNum) ? 'N/A' : aqiNum} ${aqiNum !== null && !isNaN(aqiNum) ? `· ${aqiLabel}` : ''}</span>
               </div>
             </div>
@@ -443,48 +459,93 @@
             </div>
           </div>
 
+          <div style="display:flex; justify-content:space-between;align-items:center;margin-top:8px">
+            <div style="flex:1">
+              <div class="k">Hourly temps</div>
+              <canvas id="spark_${loc.id}" class="spark-canvas"></canvas>
+            </div>
+            <div style="width:1px"></div>
+          </div>
         `;
 
-        // attach handlers for actions
+        // click main select when clicking card header (so main chart shows this loc)
+        card.querySelector('.card-header').addEventListener('click', () => {
+          selectedLocationIndex = idx;
+          updateMainHourlyChart();
+        });
+
+        // actions
         const refreshBtn = card.querySelector('[data-action="refresh"]');
         const removeBtn = card.querySelector('[data-action="remove"]');
-
-        refreshBtn.addEventListener('click', () => refreshLocation(idx));
-        removeBtn.addEventListener('click', () => removeLocation(idx));
+        refreshBtn.addEventListener('click', (ev) => { ev.stopPropagation(); refreshLocation(idx); });
+        removeBtn.addEventListener('click', (ev) => { ev.stopPropagation(); removeLocation(idx); });
 
         gridArea.appendChild(card);
-      });
+
+        // render sparkline safely (fixed height)
+        if (hourly && Array.isArray(hourly.time) && Array.isArray(hourly.temperature_2m)){
+          try {
+            const canvas = document.getElementById(`spark_${loc.id}`);
+            // ensure fixed pixel height to prevent Chart.js from resizing weirdly
+            canvas.width = 160;
+            canvas.height = 48;
+            const ctx = canvas.getContext('2d');
+            const labels = hourly.time.slice(0, 24).map(t => t.replace('T',' ').slice(11,16));
+            const temps = hourly.temperature_2m.slice(0, 24);
+            const spark = new Chart(ctx, {
+              type: 'line',
+              data: { labels, datasets: [{ data: temps, fill:true, tension:0.25, pointRadius:0, borderWidth:1 }] },
+              options: {
+                responsive: false, // important: false for fixed canvas size
+                plugins:{ legend:{ display:false } },
+                scales: { x:{ display:false }, y:{ display:false } },
+                elements:{ line:{ backgroundColor:'rgba(255,0,153,0.12)', borderColor:'rgba(255,0,153,0.9)' } }
+              }
+            });
+            cardCharts.set(loc.id, spark);
+          } catch(e){ console.warn('sparkline err', e); }
+        }
+      }); // end forEach
+
+      // after rendering cards, update main chart for selected location
+      updateMainHourlyChart();
     }
 
-    // ---------- CRUD operations ----------
+    // CRUD operations
     async function addLocation(lat, lon, name){
       status.textContent = 'Adding...';
       try {
-        const [wJson, aJson] = await Promise.all([fetchWeather(lat, lon).catch(()=>null), fetchAqi(lat, lon).catch(()=>null)]);
-        // extract current weather safely
-        const wCur = wJson && wJson.current ? wJson.current : null;
+        const [wJson, aJson] = await Promise.all([
+          fetchWeather(lat, lon).catch(()=>null),
+          fetchAqi(lat, lon).catch(()=>null)
+        ]);
+
+        const wCur = wJson && wJson.current_weather ? wJson.current_weather : null;
+        const hourly = wJson && wJson.hourly ? wJson.hourly : null;
         const aqiVal = aJson && aJson.hourly && Array.isArray(aJson.hourly.us_aqi) && aJson.hourly.us_aqi.length ? aJson.hourly.us_aqi[aJson.hourly.us_aqi.length - 1] : null;
 
         const data = {
-          temp: wCur?.temperature_2m ?? null,
-          feels: wCur?.apparent_temperature ?? null,
-          is_day: wCur?.is_day ?? null,
-          wind: wCur?.wind_speed_10m ?? null,
-          pressure: wCur?.surface_pressure ?? null,
-          cloud: wCur?.cloud_cover ?? null,
-          humidity: wCur?.relative_humidity_2m ?? null,
-          dew: wCur?.dew_point_2m ?? null,
+          temp: wCur?.temperature ?? null,
+          feels: wJson?.hourly?.apparent_temperature ? wJson.hourly.apparent_temperature[0] ?? null : (wCur?.temperature ?? null),
+          is_day: (wCur?.is_day !== undefined ? wCur.is_day : null),
+          wind: wCur?.windspeed ?? null,
+          pressure: wJson?.surface_pressure ?? null,
+          cloud: wJson?.cloudcover ?? null,
+          humidity: wJson?.relativehumidity_2m ?? null,
+          dew: wJson?.dew_point_2m ?? null,
           aqi: (aqiVal === undefined ? null : (aqiVal === null ? null : Number(aqiVal)))
         };
 
         const entry = {
           id: uid(),
-          name: name || `${lat.toFixed(3)}, ${lon.toFixed(3)}`,
+          name: name || `${Number(lat).toFixed(3)}, ${Number(lon).toFixed(3)}`,
           lat: Number(lat),
           lon: Number(lon),
           data,
+          hourly,
           lastUpdated: Date.now()
         };
+
         locations.push(entry);
         saveState();
         render();
@@ -503,21 +564,28 @@
       if (!loc) return;
       status.textContent = `Refreshing ${loc.name}...`;
       try {
-        const [wJson, aJson] = await Promise.all([fetchWeather(loc.lat, loc.lon).catch(()=>null), fetchAqi(loc.lat, loc.lon).catch(()=>null)]);
-        const wCur = wJson && wJson.current ? wJson.current : null;
+        const [wJson, aJson] = await Promise.all([
+          fetchWeather(loc.lat, loc.lon).catch(()=>null),
+          fetchAqi(loc.lat, loc.lon).catch(()=>null)
+        ]);
+        const wCur = wJson && wJson.current_weather ? wJson.current_weather : null;
+        const hourly = wJson && wJson.hourly ? wJson.hourly : null;
         const aqiVal = aJson && aJson.hourly && Array.isArray(aJson.hourly.us_aqi) && aJson.hourly.us_aqi.length ? aJson.hourly.us_aqi[aJson.hourly.us_aqi.length - 1] : null;
+
         const data = {
-          temp: wCur?.temperature_2m ?? null,
-          feels: wCur?.apparent_temperature ?? null,
-          is_day: wCur?.is_day ?? null,
-          wind: wCur?.wind_speed_10m ?? null,
-          pressure: wCur?.surface_pressure ?? null,
-          cloud: wCur?.cloud_cover ?? null,
-          humidity: wCur?.relative_humidity_2m ?? null,
-          dew: wCur?.dew_point_2m ?? null,
+          temp: wCur?.temperature ?? null,
+          feels: wJson?.hourly?.apparent_temperature ? wJson.hourly.apparent_temperature[0] ?? null : (wCur?.temperature ?? null),
+          is_day: (wCur?.is_day !== undefined ? wCur.is_day : null),
+          wind: wCur?.windspeed ?? null,
+          pressure: wJson?.surface_pressure ?? null,
+          cloud: wJson?.cloudcover ?? null,
+          humidity: wJson?.relativehumidity_2m ?? null,
+          dew: wJson?.dew_point_2m ?? null,
           aqi: (aqiVal === undefined ? null : (aqiVal === null ? null : Number(aqiVal)))
         };
+
         locations[index].data = data;
+        locations[index].hourly = hourly;
         locations[index].lastUpdated = Date.now();
         saveState();
         render();
@@ -535,26 +603,29 @@
       if (locations.length === 0) return;
       status.textContent = 'Refreshing all...';
       for (let i=0;i<locations.length;i++){
-        // sequential to avoid hammering; could be parallel but mild delay is safer
-        // you could parallelize with Promise.all if you want faster updates
-        // await refreshLocation(i); // refreshLocation saves and re-renders
         try {
           const loc = locations[i];
-          const [wJson, aJson] = await Promise.all([fetchWeather(loc.lat, loc.lon).catch(()=>null), fetchAqi(loc.lat, loc.lon).catch(()=>null)]);
-          const wCur = wJson && wJson.current ? wJson.current : null;
+          const [wJson, aJson] = await Promise.all([
+            fetchWeather(loc.lat, loc.lon).catch(()=>null),
+            fetchAqi(loc.lat, loc.lon).catch(()=>null)
+          ]);
+          const wCur = wJson && wJson.current_weather ? wJson.current_weather : null;
+          const hourly = wJson && wJson.hourly ? wJson.hourly : null;
           const aqiVal = aJson && aJson.hourly && Array.isArray(aJson.hourly.us_aqi) && aJson.hourly.us_aqi.length ? aJson.hourly.us_aqi[aJson.hourly.us_aqi.length - 1] : null;
+
           const data = {
-            temp: wCur?.temperature_2m ?? null,
-            feels: wCur?.apparent_temperature ?? null,
-            is_day: wCur?.is_day ?? null,
-            wind: wCur?.wind_speed_10m ?? null,
-            pressure: wCur?.surface_pressure ?? null,
-            cloud: wCur?.cloud_cover ?? null,
-            humidity: wCur?.relative_humidity_2m ?? null,
-            dew: wCur?.dew_point_2m ?? null,
+            temp: wCur?.temperature ?? null,
+            feels: wJson?.hourly?.apparent_temperature ? wJson.hourly.apparent_temperature[0] ?? null : (wCur?.temperature ?? null),
+            is_day: (wCur?.is_day !== undefined ? wCur.is_day : null),
+            wind: wCur?.windspeed ?? null,
+            pressure: wJson?.surface_pressure ?? null,
+            cloud: wJson?.cloudcover ?? null,
+            humidity: wJson?.relativehumidity_2m ?? null,
+            dew: wJson?.dew_point_2m ?? null,
             aqi: (aqiVal === undefined ? null : (aqiVal === null ? null : Number(aqiVal)))
           };
           locations[i].data = data;
+          locations[i].hourly = hourly;
           locations[i].lastUpdated = Date.now();
         } catch(e){
           console.warn('refresh error for index', i, e);
@@ -569,6 +640,9 @@
     function removeLocation(index){
       const name = locations[index]?.name || 'item';
       if (!confirm(`Remove ${name}?`)) return;
+      // destroy chart instance for that card if present
+      const id = locations[index].id;
+      if (cardCharts.has(id)){ try{ cardCharts.get(id).destroy(); }catch(e){} cardCharts.delete(id); }
       locations.splice(index,1);
       saveState();
       render();
@@ -578,97 +652,97 @@
 
     function clearAll(){
       if (!confirm('Remove all saved locations?')) return;
+      destroyAllCardCharts();
+      destroyMainChart();
       locations = [];
       saveState();
       render();
       status.textContent = 'Cleared';
     }
 
-    // ---------- UI interactions ----------
-    // Search typing -> geocode suggestions
+    // UI interactions
     let suggestionTimeout = null;
     searchInput.addEventListener('input', (e) => {
       const q = (e.target.value || '').trim();
       if (suggestionTimeout) clearTimeout(suggestionTimeout);
-      if (!q) { suggestionsEl.style.display = 'none'; suggestionsEl.innerHTML=''; return; }
+      if (!q){ suggestionsEl.style.display='none'; suggestionsEl.innerHTML=''; return; }
       suggestionTimeout = setTimeout(()=> geocodeQuery(q), 300);
     });
+    searchClear.addEventListener('click', ()=> { searchInput.value=''; suggestionsEl.style.display='none'; suggestionsEl.innerHTML=''; });
 
-    // clicking a suggestion -> add location
     suggestionsEl.addEventListener('click', (ev) => {
       const item = ev.target.closest('.item');
       if (!item) return;
       const lat = Number(item.dataset.lat);
       const lon = Number(item.dataset.lon);
       const name = item.dataset.name || item.textContent;
-      suggestionsEl.style.display = 'none';
+      suggestionsEl.style.display='none';
       searchInput.value = '';
+      // avoid duplicates within ~10km
+      const duplicate = locations.some(l => Math.abs(l.lat - lat) < 0.1 && Math.abs(l.lon - lon) < 0.1);
+      if (duplicate) { alert('Location already added'); return; }
       addLocation(lat, lon, name);
     });
 
-    // add coords button
     addCoordsBtn.addEventListener('click', () => {
       const lat = Number(latInput.value);
       const lon = Number(lonInput.value);
-      if (isNaN(lat) || isNaN(lon)){
-        alert('Enter valid numbers for lat & lon');
-        return;
-      }
+      if (isNaN(lat) || isNaN(lon)){ alert('Enter valid numbers for lat & lon'); return; }
+      const duplicate = locations.some(l => Math.abs(l.lat - lat) < 0.1 && Math.abs(l.lon - lon) < 0.1);
+      if (duplicate) { alert('Location already added'); latInput.value=''; lonInput.value=''; return; }
       addLocation(lat, lon, `Coords: ${lat.toFixed(3)}, ${lon.toFixed(3)}`);
-      latInput.value = ''; lonInput.value = '';
+      latInput.value=''; lonInput.value='';
     });
 
-    // quick chips
     document.getElementById('quickChips').addEventListener('click', (ev) => {
       const chip = ev.target.closest('.chip');
       if (!chip) return;
       const lat = Number(chip.dataset.lat);
       const lon = Number(chip.dataset.lon);
       const name = chip.textContent.trim();
+      const duplicate = locations.some(l => Math.abs(l.lat - lat) < 0.1 && Math.abs(l.lon - lon) < 0.1);
+      if (duplicate) { alert('Location already added'); return; }
       addLocation(lat, lon, name);
     });
 
     updateAllBtn.addEventListener('click', refreshAll);
     clearAllBtn.addEventListener('click', clearAll);
 
-    // hide suggestions when clicking outside
     document.addEventListener('click', (ev) => {
-      if (!ev.target.closest('#suggestions') && !ev.target.closest('#searchInput')){
-        suggestionsEl.style.display = 'none';
-      }
+      if (!ev.target.closest('#suggestions') && !ev.target.closest('#searchInput')) suggestionsEl.style.display='none';
     });
 
-    // ---------- initial behavior: load stored + detect user location ----------
+    // initial + geolocation
     async function init(){
       render();
-      // if stored exist, attempt to refresh them on startup
+
+      // refresh saved on startup
       if (locations.length > 0){
-        // refresh in background
         status.textContent = 'Refreshing saved locations...';
         await refreshAll();
       }
 
-      // detect user location and add as top location if not already present
+      // try to add user location (if not duplicate)
       if (navigator.geolocation){
         navigator.geolocation.getCurrentPosition(async (pos) => {
           const lat = pos.coords.latitude;
           const lon = pos.coords.longitude;
-          // avoid duplicate within ~10km
           const duplicate = locations.some(l => Math.abs(l.lat - lat) < 0.1 && Math.abs(l.lon - lon) < 0.1);
           if (!duplicate){
             try {
               const [wJson, aJson] = await Promise.all([fetchWeather(lat, lon).catch(()=>null), fetchAqi(lat, lon).catch(()=>null)]);
-              const wCur = wJson && wJson.current ? wJson.current : null;
+              const wCur = wJson && wJson.current_weather ? wJson.current_weather : null;
+              const hourly = wJson && wJson.hourly ? wJson.hourly : null;
               const aqiVal = aJson && aJson.hourly && Array.isArray(aJson.hourly.us_aqi) && aJson.hourly.us_aqi.length ? aJson.hourly.us_aqi[aJson.hourly.us_aqi.length - 1] : null;
               const data = {
-                temp: wCur?.temperature_2m ?? null,
-                feels: wCur?.apparent_temperature ?? null,
-                is_day: wCur?.is_day ?? null,
-                wind: wCur?.wind_speed_10m ?? null,
-                pressure: wCur?.surface_pressure ?? null,
-                cloud: wCur?.cloud_cover ?? null,
-                humidity: wCur?.relative_humidity_2m ?? null,
-                dew: wCur?.dew_point_2m ?? null,
+                temp: wCur?.temperature ?? null,
+                feels: wJson?.hourly?.apparent_temperature ? wJson.hourly.apparent_temperature[0] ?? null : (wCur?.temperature ?? null),
+                is_day: (wCur?.is_day !== undefined ? wCur.is_day : null),
+                wind: wCur?.windspeed ?? null,
+                pressure: wJson?.surface_pressure ?? null,
+                cloud: wJson?.cloudcover ?? null,
+                humidity: wJson?.relativehumidity_2m ?? null,
+                dew: wJson?.dew_point_2m ?? null,
                 aqi: (aqiVal === undefined ? null : (aqiVal === null ? null : Number(aqiVal)))
               };
               const entry = {
@@ -676,6 +750,7 @@
                 name: 'My Location',
                 lat, lon,
                 data,
+                hourly,
                 lastUpdated: Date.now()
               };
               locations.unshift(entry);
@@ -688,44 +763,59 @@
             }
           }
         }, (err) => {
-          // permission denied or other error — OK to ignore silently
           console.warn('geolocation error', err);
-        }, { enableHighAccuracy: false, timeout: 5000 });
+        }, { enableHighAccuracy:false, timeout:5000 });
       }
     }
 
-    // ---------- utility: geocodeQuery implementation ----------
-    // (kept here for readability; uses Open-Meteo geocoding)
-    let lastGeoReq = 0;
-    async function geocodeQuery(q){
-      lastGeoReq++;
-      const thisReq = lastGeoReq;
-      suggestionsEl.style.display = 'none';
-      suggestionsEl.innerHTML = '<div class="item">Searching…</div>';
-      suggestionsEl.style.display = 'block';
-      try {
-        const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=8&language=en`;
-        const r = await fetch(url);
-        const json = await r.json();
-        if (thisReq !== lastGeoReq) return; // ignore stale
-        if (!json || !Array.isArray(json.results) || json.results.length === 0){
-          suggestionsEl.innerHTML = '<div class="item">No results</div>';
-          return;
+    // main hourly chart update (for selected location)
+    function updateMainHourlyChart(){
+      destroyMainChart();
+      if (locations.length === 0){ selectedLabel.textContent = '—'; return; }
+      const loc = locations[selectedLocationIndex];
+      selectedLabel.textContent = loc.name;
+      const hourly = loc.hourly;
+      if (!hourly || !Array.isArray(hourly.time) || !Array.isArray(hourly.temperature_2m)){
+        // nothing to show
+        selectedLabel.textContent = loc.name + ' · no hourly data';
+        return;
+      }
+
+      // set fixed size for main canvas to avoid weird resize
+      mainHourlyCanvas.width = mainHourlyCanvas.clientWidth;
+      mainHourlyCanvas.height = 220;
+
+      const ctx = mainHourlyCanvas.getContext('2d');
+      const labels = hourly.time.slice(0, 48).map(t => t.replace('T',' ').slice(11,16));
+      const temps = hourly.temperature_2m.slice(0, 48);
+
+      mainChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: `${loc.name} · Temp (°C)`,
+            data: temps,
+            tension: 0.25,
+            fill: true,
+            borderColor: 'rgba(255,0,153,0.95)',
+            backgroundColor: 'rgba(255,0,153,0.12)',
+            pointRadius: 0
+          }]
+        },
+        options: {
+          responsive: false, // canvas has fixed pixel height
+          plugins: { legend: { display: true, labels: { color: '#fff' } } },
+          scales: {
+            x: { ticks: { color: '#9fb4d9' } },
+            y: { ticks: { color: '#9fb4d9' } }
+          }
         }
-        suggestionsEl.innerHTML = json.results.map(r => {
-          const label = `${r.name}${r.admin1 ? ', '+r.admin1 : ''}${r.country ? ', '+r.country : ''}`;
-          const safe = escapeHtml(label);
-          return `<div class="item" data-lat="${r.latitude}" data-lon="${r.longitude}" data-name="${safe}">${safe}</div>`;
-        }).join('');
-      } catch(e){
-        console.warn(e);
-        suggestionsEl.innerHTML = '<div class="item">Error fetching</div>';
-      }
+      });
     }
 
-    // ---------- start ----------
+    // start
     init();
-
   </script>
 </body>
 </html>
